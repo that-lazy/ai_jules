@@ -1,0 +1,72 @@
+npm warn ERESOLVE overriding peer dependency
+npm warn While resolving: jest-watch-typeahead@2.2.1
+npm warn Found: jest@30.2.0
+npm warn node_modules/jest
+npm warn   dev jest@"^30.2.0" from the root project
+npm warn   1 more (@testing-library/react-native)
+npm warn
+npm warn Could not resolve dependency:
+npm warn peer jest@"^27.0.0 || ^28.0.0 || ^29.0.0" from jest-watch-typeahead@2.2.1
+npm warn node_modules/jest-watch-typeahead
+npm warn   jest-watch-typeahead@"2.2.1" from jest-expo@54.0.16
+npm warn   node_modules/jest-expo
+npm warn
+npm warn Conflicting peer dependency: jest@29.7.0
+npm warn node_modules/jest
+npm warn   peer jest@"^27.0.0 || ^28.0.0 || ^29.0.0" from jest-watch-typeahead@2.2.1
+npm warn   node_modules/jest-watch-typeahead
+npm warn     jest-watch-typeahead@"2.2.1" from jest-expo@54.0.16
+npm warn     node_modules/jest-expo
+npm error code ERESOLVE
+npm error ERESOLVE could not resolve
+npm error
+npm error While resolving: react-dom@19.2.3
+npm error Found: react@19.1.0
+npm error node_modules/react
+npm error   react@"19.1.0" from the root project
+npm error   peerOptional react@"*" from @expo/devtools@0.1.8
+npm error   node_modules/@expo/devtools
+npm error     @expo/devtools@"0.1.8" from expo@54.0.30
+npm error     node_modules/expo
+npm error       expo@"~54.0.30" from the root project
+npm error       16 more (babel-preset-expo, expo-application, expo-constants, ...)
+npm error   60 more (@radix-ui/react-compose-refs, ...)
+npm error
+npm error Could not resolve dependency:
+npm error peer react@"^19.2.3" from react-dom@19.2.3
+npm error node_modules/react-dom
+npm error   peerOptional react-dom@"*" from expo-router@6.0.21
+npm error   node_modules/expo-router
+npm error     expo-router@"~6.0.21" from the root project
+npm error     1 more (@expo/cli)
+npm error   peerOptional react-dom@"*" from @expo/metro-runtime@6.1.2
+npm error   node_modules/expo-router/node_modules/@expo/metro-runtime
+npm error     @expo/metro-runtime@"^6.1.2" from expo-router@6.0.21
+npm error   12 more (@radix-ui/react-collection, ...)
+npm error
+npm error Conflicting peer dependency: react@19.2.3
+npm error node_modules/react
+npm error   peer react@"^19.2.3" from react-dom@19.2.3
+npm error   node_modules/react-dom
+npm error     peerOptional react-dom@"*" from expo-router@6.0.21
+npm error     node_modules/expo-router
+npm error       expo-router@"~6.0.21" from the root project
+npm error       1 more (@expo/cli)
+npm error     peerOptional react-dom@"*" from @expo/metro-runtime@6.1.2
+npm error     node_modules/expo-router/node_modules/@expo/metro-runtime
+npm error       @expo/metro-runtime@"^6.1.2" from expo-router@6.0.21
+npm error     12 more (@radix-ui/react-collection, ...)
+npm error
+npm error Fix the upstream dependency conflict, or retry
+npm error this command with --force or --legacy-peer-deps
+npm error to accept an incorrect (and potentially broken) dependency resolution.
+npm error
+npm error
+npm error For a full report see:
+npm error /home/jules/.npm/_logs/2026-01-02T06_51_05_879Z-eresolve-report.txt
+npm notice
+npm notice New minor version of npm available! 11.6.2 -> 11.7.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.7.0
+npm notice To update run: npm install -g npm@11.7.0
+npm notice
+npm error A complete log of this run can be found in: /home/jules/.npm/_logs/2026-01-02T06_51_05_879Z-debug-0.log
