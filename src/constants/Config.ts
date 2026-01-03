@@ -6,5 +6,5 @@ export const Config = {
   GEMINI_API_KEY: "PLACEHOLDER_KEY_REPLACE_ME",
 
   // Feature flags
-  USE_MOCK_AI: true, // Will automatically be set to true if key is placeholder
+  USE_MOCK_AI: false, // Set to false to allow API key detection (isMockMode will be true if key is placeholder)
 };
