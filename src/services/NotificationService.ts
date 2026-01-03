@@ -2,6 +2,7 @@ import * as Notifications from 'expo-notifications';
 import { SpeechService } from './SpeechService';
 import { Platform } from 'react-native';
 
+// Set handler for local notifications
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -14,13 +15,25 @@ Notifications.setNotificationHandler({
 
 export const NotificationService = {
   requestPermissions: async () => {
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-    if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
+    try {
+      // In Expo Go on Android SDK 53+, remote push is disabled.
+      // However, local notifications still work.
+      // requestPermissionsAsync() defaults to asking for everything, including remote.
+      // We try to request generically, but catch errors to prevent crashes in Expo Go.
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+      return finalStatus === 'granted';
+    } catch (error) {
+      console.warn("Notification permission request failed (likely Expo Go restriction):", error);
+      // Fallback: assume we can't notify, but don't crash the app.
+      // On Android 13+, this means notifications won't appear, but the app keeps running.
+      return false;
     }
-    return finalStatus === 'granted';
   },
 
   scheduleTask: async (title: string, body: string, hour: number, minute: number) => {
@@ -33,35 +46,44 @@ export const NotificationService = {
       scheduledTime.setDate(scheduledTime.getDate() + 1);
     }
 
-    // Expo Notification trigger is strict about Date types in some versions
-    const trigger = scheduledTime;
+    try {
+      // Expo Notification trigger is strict about Date types in some versions
+      const trigger = scheduledTime;
 
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title,
-        body,
-        data: { speakBody: body },
-      },
-      trigger: trigger as unknown as Notifications.NotificationTriggerInput,
-    });
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title,
+          body,
+          data: { speakBody: body },
+        },
+        trigger: trigger as unknown as Notifications.NotificationTriggerInput,
+      });
+    } catch (error) {
+      console.warn("Failed to schedule notification:", error);
+    }
 
     return scheduledTime;
   },
 
   setupListeners: () => {
     // Listener for when user interacts with notification
-    const subscription = Notifications.addNotificationResponseReceivedListener(response => {
-      const body = response.notification.request.content.data.speakBody;
-      if (typeof body === 'string') {
-        // Delay slightly to allow app to come to foreground
-        setTimeout(() => {
-          SpeechService.speak(body);
-        }, 500);
-      }
-    });
+    try {
+      const subscription = Notifications.addNotificationResponseReceivedListener(response => {
+        const body = response.notification.request.content.data.speakBody;
+        if (typeof body === 'string') {
+          // Delay slightly to allow app to come to foreground
+          setTimeout(() => {
+            SpeechService.speak(body);
+          }, 500);
+        }
+      });
 
-    return () => {
-      subscription.remove();
-    };
+      return () => {
+        subscription.remove();
+      };
+    } catch (error) {
+      console.warn("Failed to setup notification listeners:", error);
+      return () => {};
+    }
   }
 };
