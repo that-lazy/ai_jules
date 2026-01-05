@@ -42,8 +42,22 @@ export default function App() {
 
     try {
       // Step A: Location
-      let location = await Location.getCurrentPositionAsync({});
-      // Fallback if needed, but getCurrentPositionAsync usually throws or waits
+      // Try to get cached location first for speed
+      let location = await Location.getLastKnownPositionAsync({});
+
+      // If no cached location, fetch current (with timeout)
+      if (!location) {
+         // 5 second timeout to prevent hanging
+        const locationPromise = Location.getCurrentPositionAsync({});
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Location request timed out")), 5000)
+        );
+        location = await Promise.race([locationPromise, timeoutPromise]) as Location.LocationObject;
+      }
+
+      if (!location) {
+        throw new Error("Could not acquire location.");
+      }
 
       // Step B: Weather
       const weatherData = await WeatherService.getWeather(
@@ -62,9 +76,9 @@ export default function App() {
       // Step D: Speak
       SpeechService.speak(briefing);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      Alert.alert("Error", "Could not complete morning briefing.");
+      Alert.alert("Briefing Error", error.message || "Could not complete morning briefing.");
     } finally {
       setLoadingMorning(false);
     }

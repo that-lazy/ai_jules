@@ -47,16 +47,17 @@ export const NotificationService = {
     }
 
     try {
-      // Expo Notification trigger is strict about Date types in some versions
-      const trigger = scheduledTime;
-
+      // Fix: Use the correct trigger object format required by newer Expo SDKs
       await Notifications.scheduleNotificationAsync({
         content: {
           title,
           body,
           data: { speakBody: body },
         },
-        trigger: trigger as unknown as Notifications.NotificationTriggerInput,
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          date: scheduledTime,
+        },
       });
     } catch (error) {
       console.warn("Failed to schedule notification:", error);

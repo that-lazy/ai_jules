@@ -10,6 +10,9 @@ jest.mock('expo-notifications', () => ({
   addNotificationResponseReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
   requestPermissionsAsync: jest.fn(() => Promise.resolve({ status: 'granted' })),
   getPermissionsAsync: jest.fn(() => Promise.resolve({ status: 'granted' })),
+  SchedulableTriggerInputTypes: {
+    DATE: 'date',
+  }
 }));
 
 jest.mock('expo-location', () => ({
@@ -17,6 +20,7 @@ jest.mock('expo-location', () => ({
   getCurrentPositionAsync: jest.fn(() => Promise.resolve({
     coords: { latitude: 40.7128, longitude: -74.0060 }
   })),
+  getLastKnownPositionAsync: jest.fn(() => Promise.resolve(null)), // Mock failure first
 }));
 
 import { GeminiService } from '../services/GeminiService';
@@ -30,7 +34,6 @@ describe('DayBreak Logic Flow', () => {
   });
 
   test('GeminiService Mock Mode returns valid structure', async () => {
-    // Ensure we are in mock mode (default if no key)
     const result = await GeminiService.parseTaskRequest("Remind me to call Mom");
     expect(result).toHaveProperty('title');
     expect(result).toHaveProperty('hour');
@@ -39,7 +42,6 @@ describe('DayBreak Logic Flow', () => {
   });
 
   test('WeatherService fetches (or mocks) data correctly', async () => {
-    // We can mock fetch global if needed, but the service has a try/catch fallback
     global.fetch = jest.fn(() => Promise.resolve({
       json: () => Promise.resolve({
         current_weather: { temperature: 25, weathercode: 0 }
@@ -51,13 +53,12 @@ describe('DayBreak Logic Flow', () => {
     expect(weather.condition).toBe("Clear sky");
   });
 
-  test('Notification scheduling logic calculates future time', async () => {
+  test('Notification scheduling logic uses correct trigger format', async () => {
     const title = "Test Task";
     const body = "Test Body";
     const now = new Date();
     const targetHour = (now.getHours() + 1) % 24;
 
-    // This is an async call to the wrapped expo-notifications
     await NotificationService.scheduleTask(title, body, targetHour, 30);
 
     const expoNotifications = require('expo-notifications');
@@ -66,6 +67,11 @@ describe('DayBreak Logic Flow', () => {
 
     expect(callArgs.content.title).toBe(title);
     expect(callArgs.content.body).toBe(body);
-    expect(callArgs.trigger).toBeInstanceOf(Date);
+
+    // STRICT CHECK: Ensure trigger is NOT a Date, but an object with { type: 'date', date: ... }
+    expect(callArgs.trigger).not.toBeInstanceOf(Date);
+    expect(callArgs.trigger).toHaveProperty('type', 'date');
+    expect(callArgs.trigger).toHaveProperty('date');
+    expect(callArgs.trigger.date).toBeInstanceOf(Date);
   });
 });
