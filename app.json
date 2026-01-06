@@ -1,7 +1,8 @@
 {
   "expo": {
-    "name": "app",
-    "slug": "app",
+    "name": "DayBreak",
+    "slug": "daybreak",
+    "scheme": "daybreak",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

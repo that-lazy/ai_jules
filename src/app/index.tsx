@@ -27,7 +27,7 @@ export default function App() {
       await NotificationService.requestPermissions();
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission Denied', 'Location is needed for weather updates.');
+        Alert.alert('Permission Denied', 'Location is needed for weather updates. Defaulting to New York.');
       }
     })();
 
@@ -42,28 +42,34 @@ export default function App() {
 
     try {
       // Step A: Location
-      // Try to get cached location first for speed
-      let location = await Location.getLastKnownPositionAsync({});
+      let latitude = 40.7128; // Default NY
+      let longitude = -74.0060;
 
-      // If no cached location, fetch current (with timeout)
-      if (!location) {
-         // 5 second timeout to prevent hanging
-        const locationPromise = Location.getCurrentPositionAsync({});
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Location request timed out")), 5000)
-        );
-        location = await Promise.race([locationPromise, timeoutPromise]) as Location.LocationObject;
-      }
+      try {
+        // Try to get cached location first for speed
+        let location = await Location.getLastKnownPositionAsync({});
 
-      if (!location) {
-        throw new Error("Could not acquire location.");
+        // If no cached location, fetch current (with timeout)
+        if (!location) {
+           // 5 second timeout to prevent hanging
+          const locationPromise = Location.getCurrentPositionAsync({});
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("Location request timed out")), 5000)
+          );
+          location = await Promise.race([locationPromise, timeoutPromise]) as Location.LocationObject;
+        }
+
+        if (location) {
+          latitude = location.coords.latitude;
+          longitude = location.coords.longitude;
+        }
+      } catch (locError) {
+        console.warn("Location fetch failed, using default:", locError);
+        // Do NOT stop execution, proceed with default coords
       }
 
       // Step B: Weather
-      const weatherData = await WeatherService.getWeather(
-        location.coords.latitude,
-        location.coords.longitude
-      );
+      const weatherData = await WeatherService.getWeather(latitude, longitude);
       setWeather({ temp: weatherData.temperature, condition: weatherData.condition });
 
       // Step C: Gemini Briefing

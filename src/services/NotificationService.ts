@@ -1,6 +1,7 @@
 import * as Notifications from 'expo-notifications';
 import { SpeechService } from './SpeechService';
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 
 // Set handler for local notifications
 Notifications.setNotificationHandler({
@@ -15,23 +16,30 @@ Notifications.setNotificationHandler({
 
 export const NotificationService = {
   requestPermissions: async () => {
+    // Android Expo Go check:
+    // remote notifications are removed in SDK 53+.
+    // requesting permissions via requestPermissionsAsync() might fail if it implies remote scope.
+    // We will stick to getPermissionsAsync mostly, and catch errors.
+
     try {
-      // In Expo Go on Android SDK 53+, remote push is disabled.
-      // However, local notifications still work.
-      // requestPermissionsAsync() defaults to asking for everything, including remote.
-      // We try to request generically, but catch errors to prevent crashes in Expo Go.
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
       let finalStatus = existingStatus;
 
+      // Only request if not granted.
+      // Note: On Android Expo Go, this might throw if it tries to ask for remote push.
+      // But we need to ask for notification permission on Android 13+.
       if (existingStatus !== 'granted') {
-        const { status } = await Notifications.requestPermissionsAsync();
-        finalStatus = status;
+        try {
+          const { status } = await Notifications.requestPermissionsAsync();
+          finalStatus = status;
+        } catch (reqError) {
+           console.warn("requestPermissionsAsync failed:", reqError);
+           // If request failed, we stick with existingStatus (likely undetermined/denied)
+        }
       }
       return finalStatus === 'granted';
     } catch (error) {
-      console.warn("Notification permission request failed (likely Expo Go restriction):", error);
-      // Fallback: assume we can't notify, but don't crash the app.
-      // On Android 13+, this means notifications won't appear, but the app keeps running.
+      console.warn("Notification permission check error:", error);
       return false;
     }
   },
@@ -47,17 +55,21 @@ export const NotificationService = {
     }
 
     try {
-      // Fix: Use the correct trigger object format required by newer Expo SDKs
+      // FIX: Use explicit string 'date' instead of enum to avoid potential undefined issues
+      // if import is weird or version mismatch.
+      // Also ensure date is a Date object.
+      const trigger: Notifications.DateTriggerInput = {
+        type: 'date', // Hardcoded string as per docs for SchedulableTriggerInputTypes.DATE
+        date: scheduledTime,
+      };
+
       await Notifications.scheduleNotificationAsync({
         content: {
           title,
           body,
           data: { speakBody: body },
         },
-        trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.DATE,
-          date: scheduledTime,
-        },
+        trigger,
       });
     } catch (error) {
       console.warn("Failed to schedule notification:", error);
