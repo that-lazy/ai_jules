@@ -1,10 +1,5 @@
 export const Config = {
   // This is where the Gemini API key goes.
-  // Since we cannot expose a real key in this repo, we will use a placeholder.
-  // The AIService will detect this placeholder and switch to "Mock Mode".
-  // Users who want to use the real AI should replace this string with their valid key.
+  // Users must replace this string with their valid Gemini API Key.
   GEMINI_API_KEY: "PLACEHOLDER_KEY_REPLACE_ME",
-
-  // Feature flags
-  USE_MOCK_AI: false, // Set to false to allow API key detection (isMockMode will be true if key is placeholder)
 };

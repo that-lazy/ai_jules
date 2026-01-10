@@ -1,35 +1,22 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { Config } from '../constants/Config';
 
-// Explicit debug logging to help diagnose why it stays in mock mode
-console.log('[GeminiService] Initializing...');
-console.log('[GeminiService] Config.USE_MOCK_AI:', Config.USE_MOCK_AI);
-console.log('[GeminiService] Config.GEMINI_API_KEY is placeholder?', Config.GEMINI_API_KEY === 'PLACEHOLDER_KEY_REPLACE_ME');
-const isPlaceholder = Config.GEMINI_API_KEY === 'PLACEHOLDER_KEY_REPLACE_ME';
-const isMockMode = isPlaceholder || Config.USE_MOCK_AI;
-console.log('[GeminiService] Resolved isMockMode:', isMockMode);
+console.log('[GeminiService] Initializing Real AI Service...');
 
+// Always attempt to initialize. If the key is bad, it might fail here or on the first call.
 let genAI: GoogleGenerativeAI | null = null;
-if (!isMockMode) {
-  try {
-    genAI = new GoogleGenerativeAI(Config.GEMINI_API_KEY);
-    console.log('[GeminiService] GoogleGenerativeAI initialized with key ending in:', Config.GEMINI_API_KEY.slice(-4));
-  } catch (e) {
-    console.error('[GeminiService] Failed to initialize GoogleGenerativeAI:', e);
-  }
+try {
+  genAI = new GoogleGenerativeAI(Config.GEMINI_API_KEY);
+  console.log('[GeminiService] GoogleGenerativeAI initialized.');
+} catch (e) {
+  console.error('[GeminiService] Failed to initialize GoogleGenerativeAI:', e);
 }
 
 export const GeminiService = {
   getMorningBriefing: async (temperature: number, condition: string, date: string): Promise<string> => {
-    // Re-check mode at runtime in case of hot reload weirdness (though const shouldn't change)
-    if (isMockMode) {
-      console.log('GeminiService: Mocking Morning Briefing');
-      await new Promise(r => setTimeout(r, 1000)); // Simulate delay
-      return `Good morning! It is currently ${temperature} degrees and ${condition}. In tech news, AI continues to evolve rapidly. Have a productive day!`;
-    }
-
     try {
-      if (!genAI) throw new Error("Gemini AI not initialized");
+      if (!genAI) throw new Error("Gemini AI client is not initialized. Check your API Key.");
+
       console.log('[GeminiService] Requesting Morning Briefing from Real AI...');
       const model = genAI.getGenerativeModel({ model: "gemini-pro" });
       const prompt = `You are Jarvis. Current weather is ${temperature} degrees and ${condition}. Today is ${date}. Give me a concise, witty 3-sentence morning briefing including a tech news headline.`;
@@ -37,30 +24,20 @@ export const GeminiService = {
       const result = await model.generateContent(prompt);
       const response = await result.response;
       const text = response.text();
+
       console.log('[GeminiService] Received response:', text.slice(0, 50) + '...');
       return text;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Gemini Error (Briefing):", error);
-      // Fallback message, but DISTINCT from the Mock Mode message so we know it tried and failed.
-      return "I'm having trouble connecting to the neural network. Weather is " + condition + ".";
+      // Return the actual error message so the user hears/sees it
+      return `I encountered an error accessing my brain: ${error.message || 'Unknown Error'}. Please check your API key.`;
     }
   },
 
   parseTaskRequest: async (userInput: string): Promise<{ title: string; hour: number; minute: number; body: string } | null> => {
-    if (isMockMode) {
-      console.log('GeminiService: Mocking Task Parsing');
-      await new Promise(r => setTimeout(r, 1000));
-      // Basic mock parser for demonstration
-      return {
-        title: "Reminder",
-        hour: new Date().getHours(),
-        minute: new Date().getMinutes() + 2, // Schedule for 2 mins later
-        body: userInput
-      };
-    }
-
     try {
-      if (!genAI) throw new Error("Gemini AI not initialized");
+      if (!genAI) throw new Error("Gemini AI client is not initialized.");
+
       const model = genAI.getGenerativeModel({ model: "gemini-pro" });
       const prompt = `Analyze this request: '${userInput}'. Return ONLY a JSON object with this exact structure: { title: string, hour: number (24h format), minute: number, body: string }. Do not include markdown formatting.`;
 
@@ -72,8 +49,9 @@ export const GeminiService = {
       text = text.replace(/```json/g, '').replace(/```/g, '').trim();
 
       return JSON.parse(text);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Gemini Error (Task):", error);
+      // We return null here so the UI can handle it (show alert)
       return null;
     }
   }

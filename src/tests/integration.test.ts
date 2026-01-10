@@ -23,6 +23,24 @@ jest.mock('expo-location', () => ({
   getLastKnownPositionAsync: jest.fn(() => Promise.resolve(null)), // Mock failure first
 }));
 
+// Mock GoogleGenerativeAI
+jest.mock('@google/generative-ai', () => ({
+  GoogleGenerativeAI: jest.fn().mockImplementation(() => ({
+    getGenerativeModel: jest.fn().mockReturnValue({
+      generateContent: jest.fn().mockResolvedValue({
+        response: {
+          text: jest.fn().mockReturnValue(JSON.stringify({
+            title: "Mock Task",
+            hour: 10,
+            minute: 30,
+            body: "Mock Body"
+          }))
+        }
+      })
+    })
+  }))
+}));
+
 import { GeminiService } from '../services/GeminiService';
 import { WeatherService } from '../services/WeatherService';
 import { NotificationService } from '../services/NotificationService';
@@ -33,8 +51,9 @@ describe('DayBreak Logic Flow', () => {
     jest.clearAllMocks();
   });
 
-  test('GeminiService Mock Mode returns valid structure', async () => {
+  test('GeminiService uses Real AI Client (mocked network) to parse', async () => {
     const result = await GeminiService.parseTaskRequest("Remind me to call Mom");
+    // Since we mocked the library to return a valid JSON string, parsing should succeed.
     expect(result).toHaveProperty('title');
     expect(result).toHaveProperty('hour');
     expect(result).toHaveProperty('minute');
